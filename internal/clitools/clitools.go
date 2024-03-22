@@ -17,6 +17,12 @@ import (
     - error handling (wrapping)
     - logging
 */
+type oPCliCaller interface {
+    getSc()                                 simpleCall
+    getNumLn()                              int
+    invokeCommand()                         error
+    handleLines(string, bool, *exec.Cmd)    (bool, error)
+}
 
 type commandString struct {
     command         string
@@ -28,7 +34,6 @@ type simpleCall struct {
     tDMs            time.Duration
 }
 
-
 // type return-Lines
 // implements interface oPCliCaller
 type oPCliCallRl struct {
@@ -39,21 +44,21 @@ type oPCliCallRl struct {
 
 func (rlCall *oPCliCallRl)invokeCommand() error{
     // TODO: error handle
-    invokeAndHandle(rlCall)
-    return nil
+    _, err := invokeAndHandle(rlCall)
+    return err
 }
 
-func (rlCall *oPCliCallRl)handleLines(line string, ok bool, cmd *exec.Cmd) error{
-    if !ok {
-        // we reached the end of the line
-        if err := cmd.Wait(); err != nil{
-            return fmt.Errorf("readLines: cmd.wait failed : %w", err)
-        }
-        return nil
+func (rlCall *oPCliCallRl)handleLines(line string, ok bool, cmd *exec.Cmd) (bool, error){
+    isDone := !ok
+    if ok {
+        rlCall.rL = append(rlCall.rL, fmt.Sprintf("%v\n", line))
+        return isDone, nil
     }
-    rlCall.rL = append(rlCall.rL, fmt.Sprintf("%v\n", line))
-    fmt.Println(rlCall.rL)
-    return nil
+    // we reached the end of the command
+    if err := cmd.Wait(); err != nil{
+        return false, fmt.Errorf("readLines: cmd.wait failed : %w", err)
+    }
+    return isDone, nil
 }
 
 func (rl *oPCliCallRl)getSc() simpleCall {
@@ -75,7 +80,6 @@ type oPCliCallLogin struct {
     callLogin   func()
 }
 
-// TODO: Generics
 func (li *oPCliCallLogin)getSc() simpleCall {
     return li.sC
 }
@@ -89,35 +93,28 @@ func (li *oPCliCallLogin)getNumLn() int {
 }
 
 
-
-
-type oPCliCaller interface {
-    getSc()                                 simpleCall
-    getNumLn()                              int
-    invokeCommand()                         error
-    handleLines(string, bool, *exec.Cmd)    error
-}
-
-//resHandleFunc *func) (error) {
-
-func invokeAndHandle(oPCli oPCliCaller) error {
+func invokeAndHandle(oPCli oPCliCaller) (bool, error) {
     /* invokes a command given by a string */
 
-    ctx := context.Background()
     simpleCall := oPCli.getSc()
-    timeoutCtx, cancel := context.WithTimeout(ctx, time.Millisecond * simpleCall.tDMs)
+
+    timeoutCtx, cancel := context.WithTimeout(
+        context.Background(),
+        time.Millisecond * simpleCall.tDMs)
     defer cancel()
 
     // the command
-    cmd := exec.Command(simpleCall.cS.command, simpleCall.cS.flagsVals...)
+    cmd := exec.CommandContext(timeoutCtx, simpleCall.cS.command, simpleCall.cS.flagsVals...)
     cmdReader, err := cmd.StdoutPipe()
 
     if err != nil {
-        return fmt.Errorf("invokeCommand: Stdout Execution failed : %w", err)
+        return false,
+        fmt.Errorf("invokeCommand: Stdout Execution failed : %w", err)
     }
 
     if err := cmd.Start(); err != nil{
-        return fmt.Errorf("invokeCommand: Start cmd failed : %w", err)
+        return false,
+        fmt.Errorf("invokeCommand: Start cmd failed : %w", err)
     }
 
     scanner := bufio.NewScanner(cmdReader)
@@ -126,61 +123,25 @@ func invokeAndHandle(oPCli oPCliCaller) error {
     // starting go-routing from buffer
     go readOutput(scanner, out)
 
-    // here we need to pass in the readline or not
-    /*
-    if err := readLines(oPCli, timeoutCtx, out, cmd); err != nil {
-        return fmt.Errorf("invokeCommand: Start cmd failed : %w", err)
-    }
-    */
-
-     for {
-        select {
-        // closing the channel if timeout is hit
-        case <- timeoutCtx.Done():
-            return fmt.Errorf("readLines: CLI - timed out: %w",
-                timeoutCtx.Err())
-        case line, ok := <-out:
-            // handling of what happens with the text
-            //oPCli.invokeCommand(line, ok)
-            oPCli.handleLines(line, ok, cmd)
-        }
-    }
-
-}
-
-/*
-func readLines(oPtOCtx context.Context, out <-chan string, cmd *exec.Cmd) (error){
-
-    //var returnedLines []string
-
     for {
         select {
         // closing the channel if timeout is hit
-        case <- tOCtx.Done():
-            return fmt.Errorf("readLines: CLI - timed out: %w", tOCtx.Err())
+        case <- timeoutCtx.Done():
+            return false,
+            fmt.Errorf("readLines: CLI - timed out: %w", timeoutCtx.Err())
         case line, ok := <-out:
+            // handling of what happens with the text
+            //oPCli.invokeCommand(line, ok)
+            isDone, err := oPCli.handleLines(line, ok, cmd)
 
-
-            //sdtOutHandler(ok, ln *string, rL *[]string, cmd)
-
-            /*
-            if !ok {
-                // we reached the end of the line
-                if err := cmd.Wait(); err != nil{
-                    return nil, fmt.Errorf("readLines: cmd.wait failed : %w", err)
-                }
-
-                // TODO: here we could inject a function that handles this differently
-
-                return returnedLines, nil
-
+            fmt.Printf("isDone: %v \n", isDone)
+            if isDone || err != nil {
+                return isDone, err
             }
-
-            returnedLines = append(returnedLines, fmt.Sprintf("%v\n", line))
         }
     }
 }
-*/
+
 
 func readOutput(scanner *bufio.Scanner, out chan string){
     /* reads a maximum amount of lines into a channel */
@@ -196,9 +157,7 @@ func readOutput(scanner *bufio.Scanner, out chan string){
 
 
 
-
 func NewOPCliCall(flagsVals []string, numLn int) (string, error){
-
 
     /* takes in args and makes onepsw call */
     call := oPCliCallRl {
@@ -207,7 +166,7 @@ func NewOPCliCall(flagsVals []string, numLn int) (string, error){
                 command: "op",
                 flagsVals: flagsVals,
             },
-            tDMs: 1000,
+            tDMs: 200,
         },
         numLn: numLn,
         rL: []string{},
@@ -216,7 +175,5 @@ func NewOPCliCall(flagsVals []string, numLn int) (string, error){
     if err != nil {
         return "", fmt.Errorf("NewOPCliCall: Call Error : %w", err)
     }
-    fmt.Println("here")
-    fmt.Println(call.rL)
     return strings.Join(call.rL, ""), nil
 }
