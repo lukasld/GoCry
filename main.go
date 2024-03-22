@@ -19,7 +19,7 @@ import (
 func main(){
 
     //res, err := clitools.NewOPCliCall([]string{"vault", "list"}, 1)
-    res, err := clitools.NewOPCliCall([]string{"--help"}, 20)
+    res, err := clitools.NewOPCliCall([]string{"whoami"}, 20)
     if err != nil {
         log.Fatal(err)
     }
