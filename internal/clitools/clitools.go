@@ -26,18 +26,15 @@ import (
 
 
 /*
-1. Create a module that handles 1Password CLI commands
-    1.1 Commands - Context with Timeout
-    1.2 checks if 1Password and the 1PW-CLI is installed
-    1.3 checks if vault exists
     - error handling (wrapping)
     - logging
 */
 
-type oPCliCaller interface {
-    invokeCommand()                         error
-    handleLines(string, bool, *exec.Cmd)    (bool, error)
-}
+
+//handleCall(opcli opclicaller, cr callresults) (bool, error){
+
+
+
 type oPCliCallerCommon interface {
     getSc()         simpleCall
     getNumLn()      int
@@ -69,19 +66,41 @@ func (c *commonOPCliCall)getNumLn() int {
 
 
 
+type oPCliCaller interface {
+    invokeCommand()                             error
+    getCommonCall()                             oPCliCallerCommon
+    handleCallRes(callResults)                  (bool, error)    // handle resulting call
+    handleLinesRes(string, bool, *exec.Cmd)     (bool, error)    // handle resulting lines
+}
+
 // Struct - to hold read-lines
 type oPCliCallRl struct {
     cOPCall     oPCliCallerCommon
     rL          []string
 }
 
+func (rlCall *oPCliCallRl)getCommonCall() oPCliCallerCommon {
+    /* Returns the common Caller */
+    return rlCall.cOPCall
+}
+
 func (rlCall *oPCliCallRl)invokeCommand() error{
     // pointer to call Result
-    _, err := invokeCall(rlCall.cOPCall, rlCall)
+    _, err := invokeCall(rlCall)
     return err
 }
 
-func (rlCall *oPCliCallRl)handleLines(l string, ok bool, c *exec.Cmd) (bool, error){
+func (rlCall *oPCliCallRl)handleCallRes(cR callResults) (bool, error){
+    // do we need a for loop or simply a single line?
+    for {
+        isDone, err := selectFunc(cR, rlCall.handleLinesRes)
+        if isDone || err != nil {
+            return isDone, err
+        }
+    }
+}
+
+func (rlCall *oPCliCallRl)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, error){
     // handles the read lines
     isDone := !ok
     if ok {
@@ -94,6 +113,7 @@ func (rlCall *oPCliCallRl)handleLines(l string, ok bool, c *exec.Cmd) (bool, err
     }
     return isDone, nil
 }
+
 
 
 // typfunc waits for Login to succeed
@@ -124,10 +144,10 @@ type callResults struct {
     cmd *exec.Cmd
 }
 
-func invokeCall(oPCliC oPCliCallerCommon, oPCli oPCliCaller) (bool, error) {
+func invokeCall(oPCli oPCliCaller) (bool, error) {
     /* invokes a command given by a string */
 
-    simpleCall := oPCliC.getSc()
+    simpleCall := oPCli.getCommonCall().getSc()
     timeoutCtx, cancel := context.WithTimeout(
         context.Background(),
         time.Millisecond * simpleCall.tDMs)
@@ -143,41 +163,42 @@ func invokeCall(oPCliC oPCliCallerCommon, oPCli oPCliCaller) (bool, error) {
     }
 
     scanner := bufio.NewScanner(cmdReader)
-    out := make(chan string, oPCliC.getNumLn())
+    out := make(chan string, oPCli.getCommonCall().getNumLn())
 
     // starting go-routing from buffer
     go readOutput(scanner, out)
 
-    args := callResults{
+    callRes := callResults{
         out: out,
         cmd: cmd,
         ctx: timeoutCtx,
     }
-    // handles the reading of out
-    _, err = handleCall(oPCli, args)
+    _, err = oPCli.handleCallRes(callRes)
     return true, err
 }
 
 
-func handleCall(oPCli oPCliCaller, cR callResults) (bool, error){
 
-    for {
-        select {
-        // closing the channel if timeout is hit
-        case <- cR.ctx.Done():
-            cR.cmd.Process.Kill()
-            return false,
-            fmt.Errorf("readLines: CLI - timed out: %w", cR.ctx.Err())
-        case line, ok := <-cR.out:
-            // handling of what happens with the text
-            isDone, err := oPCli.handleLines(line, ok, cR.cmd)
-            if isDone || err != nil {
-                return isDone, err
-            }
+type lineHandlefunc func(string, bool, *exec.Cmd ) (bool, error)
+func selectFunc( cR callResults, lF lineHandlefunc ) (bool, error){
+    /*
+
+
+    */
+    select {
+    // closing the channel if timeout is hit
+    case <- cR.ctx.Done():
+        return false,
+        fmt.Errorf("readLines: CLI - timed out: %w", cR.ctx.Err())
+    case line, ok := <-cR.out:
+        // handling of what happens with the text
+        isDone, err := lF(line, ok, cR.cmd)
+        if isDone || err != nil {
+            return isDone, err
         }
     }
+    return false, nil
 }
-
 
 func readOutput(scanner *bufio.Scanner, out chan string){
     /* reads a maximum amount of lines into a channel */
@@ -191,6 +212,9 @@ func readOutput(scanner *bufio.Scanner, out chan string){
 }
 
 
+
+
+
 func NewOPCliCall(flagsVals []string, numLn int) (string, error){
     /* takes in args and makes onepsw call */
     call := oPCliCallRl {
@@ -201,7 +225,7 @@ func NewOPCliCall(flagsVals []string, numLn int) (string, error){
                     command: "op",
                     flagsVals: flagsVals,
                 },
-                tDMs: 100,
+                tDMs: 10,
             },
         },
         rL: []string{},
