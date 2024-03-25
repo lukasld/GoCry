@@ -11,109 +11,9 @@ import (
 
 
 /*
-    1. isSignedInCall   (listen to account is not signed in, or equivalent)
-    2. logInCall        (longer timeout)
-
-    For each call:
-
-    0. is op installed?
-    0. does doesGoCryVault exist
-    0. is Signed in?
-
-    3. createNewItem
-
-*/
-
-
-/*
     - error handling (wrapping)
     - logging
 */
-
-
-//handleCall(opcli opclicaller, cr callresults) (bool, error){
-
-
-
-type oPCliCallerCommon interface {
-    getSc()         simpleCall
-    getNumLn()      int
-}
-
-
-type commonOPCliCall struct {
-    // combines numLines and simpleCall
-    // getSc and getNumln as methods
-    sC          simpleCall
-    numLn       int
-}
-type commandString struct {
-    command         string
-    flagsVals    []string
-}
-
-type simpleCall struct {
-    cS              commandString
-    tDMs            time.Duration
-}
-func (c *commonOPCliCall)getSc() simpleCall {
-    return c.sC
-}
-
-func (c *commonOPCliCall)getNumLn() int {
-    return c.numLn
-}
-
-
-
-type oPCliCaller interface {
-    invokeCommand()                             error
-    getCommonCall()                             oPCliCallerCommon
-    handleCallRes(callResults)                  (bool, error)    // handle resulting call
-    handleLinesRes(string, bool, *exec.Cmd)     (bool, error)    // handle resulting lines
-}
-
-// Struct - to hold read-lines
-type oPCliCallRl struct {
-    cOPCall     oPCliCallerCommon
-    rL          []string
-}
-
-func (rlCall *oPCliCallRl)getCommonCall() oPCliCallerCommon {
-    /* Returns the common Caller */
-    return rlCall.cOPCall
-}
-
-func (rlCall *oPCliCallRl)invokeCommand() error{
-    // pointer to call Result
-    _, err := invokeCall(rlCall)
-    return err
-}
-
-func (rlCall *oPCliCallRl)handleCallRes(cR callResults) (bool, error){
-    // do we need a for loop or simply a single line?
-    for {
-        isDone, err := selectFunc(cR, rlCall.handleLinesRes)
-        if isDone || err != nil {
-            return isDone, err
-        }
-    }
-}
-
-func (rlCall *oPCliCallRl)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, error){
-    // handles the read lines
-    isDone := !ok
-    if ok {
-        rlCall.rL = append(rlCall.rL, fmt.Sprintf("%v\n", l))
-        return isDone, nil
-    }
-    // we reached the end of the command
-    if err := c.Wait(); err != nil{
-        return false, fmt.Errorf("handleLines: cmd.wait failed : %w", err)
-    }
-    return isDone, nil
-}
-
 
 
 // typfunc waits for Login to succeed
@@ -183,7 +83,6 @@ type lineHandlefunc func(string, bool, *exec.Cmd ) (bool, error)
 func selectFunc( cR callResults, lF lineHandlefunc ) (bool, error){
     /*
 
-
     */
     select {
     // closing the channel if timeout is hit
@@ -225,7 +124,7 @@ func NewOPCliCall(flagsVals []string, numLn int) (string, error){
                     command: "op",
                     flagsVals: flagsVals,
                 },
-                tDMs: 10,
+                tDMs: 100,
             },
         },
         rL: []string{},
@@ -235,7 +134,6 @@ func NewOPCliCall(flagsVals []string, numLn int) (string, error){
     if err != nil {
         return "", fmt.Errorf("NewOPCliCall: Call Error : %w", err)
     }
+
     return strings.Join(call.rL, ""), nil
 }
-
-
