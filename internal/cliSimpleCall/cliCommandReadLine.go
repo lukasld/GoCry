@@ -1,4 +1,4 @@
-package clitools
+package cliSimpleCall
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func (rlCall *oPCliCallRl)getCommonCall() oPCliCallerCommon {
     return rlCall.cOPCall
 }
 
-func (rlCall *oPCliCallRl)invokeCommand() error{
+func (rlCall *oPCliCallRl)InvokeCommand() error{
     // pointer to call Result
     _, err := invokeCall(rlCall)
     return err
@@ -45,5 +45,27 @@ func (rlCall *oPCliCallRl)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, 
     }
     return isDone, nil
 }
+
+func (rlCall *oPCliCallRl)GetReadLines() []string{
+    return rlCall.rL
+}
+
+func NewOpCliCallRl(flagsVals []string, numLn int) (error, oPCliCallRl){
+    rlCall := oPCliCallRl {
+                cOPCall: &commonOPCliCall {
+                numLn: numLn,
+                sC: simpleCall {
+                    cS: commandString{
+                        command: "op",
+                        flagsVals: flagsVals,
+                    },
+                    tDMs: 100,
+                },
+            },
+            rL: []string{},
+        }
+    return nil, rlCall
+}
+
 
 

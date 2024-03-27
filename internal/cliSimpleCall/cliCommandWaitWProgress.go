@@ -1,4 +1,4 @@
-package clitools
+package cliSimpleCall
 
 import (
 	"fmt"
@@ -18,7 +18,6 @@ func (p *ProgressMessage) Set(v string) {
     p.rwlock.Lock()
     defer p.rwlock.Unlock()
     p.current = v
-
 }
 
 func (p *ProgressMessage) Get() string {
@@ -28,18 +27,19 @@ func (p *ProgressMessage) Get() string {
 }
 
 
+
 // Struct - to hold read-lines
-type oPCliCallLogin struct {
+type oPCliCallWaitWProgress struct {
     cOPCall     oPCliCallerCommon
-    chStep           <- chan time.Time
+    chStep      <- chan time.Time
 }
 
-func (liCall *oPCliCallLogin)getCommonCall() oPCliCallerCommon {
+func (liCall *oPCliCallWaitWProgress)getCommonCall() oPCliCallerCommon {
     /* Returns the common Caller */
     return liCall.cOPCall
 }
 
-func (liCall *oPCliCallLogin)invokeCommand() error{
+func (liCall *oPCliCallWaitWProgress)InvokeCommand() error{
     // pointer to call Result
 
     pM := &ProgressMessage{current: "goCry: please authorize 1Pw Account"}
@@ -51,7 +51,7 @@ func (liCall *oPCliCallLogin)invokeCommand() error{
     return err
 }
 
-func (liCall *oPCliCallLogin)handleCallRes(cR callResults) (bool, error){
+func (liCall *oPCliCallWaitWProgress)handleCallRes(cR callResults) (bool, error){
     // do we need a for loop or simply a single line?
     for {
         isDone, err := selectFunc(cR, liCall.handleLinesRes)
@@ -61,7 +61,7 @@ func (liCall *oPCliCallLogin)handleCallRes(cR callResults) (bool, error){
     }
 }
 
-func (liCall *oPCliCallLogin)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, error){
+func (liCall *oPCliCallWaitWProgress)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, error){
 
     // handles the read lines
     isDone := !ok
@@ -76,7 +76,7 @@ func (liCall *oPCliCallLogin)handleLinesRes(l string, ok bool, c *exec.Cmd) (boo
     return isDone, nil
 }
 
-func (liCall *oPCliCallLogin) tickedProgressMsgRead(c <-chan time.Time, pM *ProgressMessage){
+func (liCall *oPCliCallWaitWProgress) tickedProgressMsgRead(c <-chan time.Time, pM *ProgressMessage){
     // counts down until a given time
     startT := int((liCall.cOPCall.getSc().tDMs*1e6).Seconds())
     for {
@@ -86,4 +86,22 @@ func (liCall *oPCliCallLogin) tickedProgressMsgRead(c <-chan time.Time, pM *Prog
             startT--
         }
     }
+}
+
+
+func NewOpCliCallWaitProgress(flagsVals []string, numLn int) (error, oPCliCallWaitWProgress){
+    wPCall := oPCliCallWaitWProgress {
+                cOPCall: &commonOPCliCall {
+                numLn: 1,
+                sC: simpleCall {
+                    cS: commandString{
+                        command: "op",
+                        flagsVals: flagsVals,
+                    },
+                    tDMs: 60000,
+                },
+            },
+            chStep: time.Tick(1 * time.Second),
+    }
+    return nil, wPCall
 }

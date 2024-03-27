@@ -1,4 +1,4 @@
-package clitools
+package cliSimpleCall
 
 import (
 	"bufio"
@@ -8,14 +8,41 @@ import (
 	"time"
 )
 
+type oPCliCallerCommon interface {
+    getSc()         simpleCall
+    getNumLn()      int
+}
+
+type commonOPCliCall struct {
+    // combines numLines and simpleCall
+    // getSc and getNumln as methods
+    sC          simpleCall
+    numLn       int
+}
+type commandString struct {
+    command         string
+    flagsVals    []string
+}
+
+type simpleCall struct {
+    cS              commandString
+    tDMs            time.Duration
+}
+func (c *commonOPCliCall)getSc() simpleCall {
+    return c.sC
+}
+
+func (c *commonOPCliCall)getNumLn() int {
+    return c.numLn
+}
+
 /*
    - error handling (wrapping)
    - logging
 */
 
-
 type oPCliCaller interface {
-    invokeCommand()                             error
+    InvokeCommand()                             error
     getCommonCall()                             oPCliCallerCommon
     handleCallRes(callResults)                  (bool, error)    // handle resulting call
     handleLinesRes(string, bool, *exec.Cmd)     (bool, error)    // handle resulting lines
@@ -95,3 +122,4 @@ func readOutput(scanner *bufio.Scanner, out chan string){
         out <- scanner.Text()
     }
 }
+

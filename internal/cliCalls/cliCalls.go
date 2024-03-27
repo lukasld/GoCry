@@ -1,54 +1,29 @@
-package clitools
+package cliCalls
 
 import (
     "fmt"
     "strings"
-    "time"
+    "internal/cliSimpleCall"
 )
 
 
 func NewOPCliCall(flagsVals []string, numLn int) (string, error){
     /* takes in args and makes onepsw call */
-    call := oPCliCallRl {
-        cOPCall: &commonOPCliCall {
-            numLn: numLn,
-            sC: simpleCall {
-                cS: commandString{
-                    command: "op",
-                    flagsVals: flagsVals,
-                },
-                tDMs: 100,
-            },
-        },
-        rL: []string{},
-    }
-
-    err := call.invokeCommand()
+    _, call := cliSimpleCall.NewOpCliCallRl(flagsVals, numLn)
+    err := call.InvokeCommand()
     if err != nil {
         return "", fmt.Errorf("NewOPCliCall: Call Error : %w", err)
     }
-    return strings.Join(call.rL, ""), nil
+    return strings.Join(call.GetReadLines(), ""), nil
 }
 
 
 func NewOpLoginCall(flagsVals []string, numLn int) error{
     /* takes in args and makes onepsw call */
     /* timout is a minute -> 60 000 ms by  */
-    call := oPCliCallLogin {
-        cOPCall: &commonOPCliCall {
-            numLn: 1,
-            sC: simpleCall {
-                cS: commandString{
-                    command: "op",
-                    flagsVals: flagsVals,
-                },
-                tDMs: 60000,
-            },
-        },
-        chStep: time.Tick(1 * time.Second),
-    }
 
-    err := call.invokeCommand()
+    _, call := cliSimpleCall.NewOpCliCallWaitProgress(flagsVals, numLn)
+    err := call.InvokeCommand()
     if err != nil {
         return fmt.Errorf("NewOPCliCall: Call Error : %w", err)
     }

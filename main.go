@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-    "internal/clitools"
+    "internal/cliCalls"
 )
 
 /*
@@ -18,7 +18,7 @@ import (
 func main(){
 
     //res, err := clitools.NewOPCliCall([]string{"vault", "list"}, 1)
-    err := clitools.NewOpLoginCall([]string{"signin"}, 1)
+    err := cliCalls.NewOpLoginCall([]string{"signin"}, 1)
     if err != nil {
         log.Fatal(err)
     }
