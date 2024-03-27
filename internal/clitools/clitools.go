@@ -4,38 +4,22 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-    "time"
 	"os/exec"
-    "strings"
+	"time"
 )
 
-
 /*
-    - error handling (wrapping)
-    - logging
+   - error handling (wrapping)
+   - logging
 */
 
 
-// typfunc waits for Login to succeed
-// implements interface oPCliCaller
-type oPCliCallLogin struct {
-    cOPCall     oPCliCallerCommon
+type oPCliCaller interface {
+    invokeCommand()                             error
+    getCommonCall()                             oPCliCallerCommon
+    handleCallRes(callResults)                  (bool, error)    // handle resulting call
+    handleLinesRes(string, bool, *exec.Cmd)     (bool, error)    // handle resulting lines
 }
-
-func (li *oPCliCallLogin)invokeCommand() {
-    return
-}
-
-func (li *oPCliCallLogin)handleLogin() (bool, error){
-    /*  call OP signin
-     *  call whoami repeatedly
-     *      -> check if 'dismissed...' is not in the string anymore
-     *      -> if URL:..., we are logged in,
-     *          -> then we return true
-     */
-    return false, nil
-}
-
 
 /* args resulting from invokeCall */
 type callResults struct {
@@ -78,15 +62,17 @@ func invokeCall(oPCli oPCliCaller) (bool, error) {
 }
 
 
-
 type lineHandlefunc func(string, bool, *exec.Cmd ) (bool, error)
 func selectFunc( cR callResults, lF lineHandlefunc ) (bool, error){
     /*
-
+        picks between timeout and next-line
     */
     select {
     // closing the channel if timeout is hit
     case <- cR.ctx.Done():
+        // TODO: POSIX only
+        //cR.cmd.Process.Kill()
+        //os.Exit(1)
         return false,
         fmt.Errorf("readLines: CLI - timed out: %w", cR.ctx.Err())
     case line, ok := <-cR.out:
@@ -108,32 +94,4 @@ func readOutput(scanner *bufio.Scanner, out chan string){
         }
         out <- scanner.Text()
     }
-}
-
-
-
-
-
-func NewOPCliCall(flagsVals []string, numLn int) (string, error){
-    /* takes in args and makes onepsw call */
-    call := oPCliCallRl {
-        cOPCall: &commonOPCliCall {
-            numLn: numLn,
-            sC: simpleCall {
-                cS: commandString{
-                    command: "op",
-                    flagsVals: flagsVals,
-                },
-                tDMs: 100,
-            },
-        },
-        rL: []string{},
-    }
-
-    err := call.invokeCommand()
-    if err != nil {
-        return "", fmt.Errorf("NewOPCliCall: Call Error : %w", err)
-    }
-
-    return strings.Join(call.rL, ""), nil
 }

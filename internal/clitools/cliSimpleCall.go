@@ -9,7 +9,6 @@ type oPCliCallerCommon interface {
     getNumLn()      int
 }
 
-
 type commonOPCliCall struct {
     // combines numLines and simpleCall
     // getSc and getNumln as methods

@@ -5,14 +5,6 @@ import (
 	"os/exec"
 )
 
-
-type oPCliCaller interface {
-    invokeCommand()                             error
-    getCommonCall()                             oPCliCallerCommon
-    handleCallRes(callResults)                  (bool, error)    // handle resulting call
-    handleLinesRes(string, bool, *exec.Cmd)     (bool, error)    // handle resulting lines
-}
-
 // Struct - to hold read-lines
 type oPCliCallRl struct {
     cOPCall     oPCliCallerCommon
@@ -53,3 +45,5 @@ func (rlCall *oPCliCallRl)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, 
     }
     return isDone, nil
 }
+
+

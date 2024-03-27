@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
     "internal/clitools"
 )
@@ -19,10 +18,10 @@ import (
 func main(){
 
     //res, err := clitools.NewOPCliCall([]string{"vault", "list"}, 1)
-    res, err := clitools.NewOPCliCall([]string{"--help"}, 20)
+    err := clitools.NewOpLoginCall([]string{"signin"}, 1)
     if err != nil {
         log.Fatal(err)
     }
-    fmt.Printf("result: %v", res)
+    //fmt.Printf("result: %v", res)
 
 }
