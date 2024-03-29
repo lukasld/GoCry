@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
-    "internal/cliCalls"
+	"fmt"
+	"internal/cliCalls"
 )
 
 /*
@@ -17,11 +17,35 @@ import (
 
 func main(){
 
-    //res, err := clitools.NewOPCliCall([]string{"vault", "list"}, 1)
-    err := cliCalls.NewOpLoginCall([]string{"signin"}, 1)
-    if err != nil {
-        log.Fatal(err)
+    /*
+    if isLogIn, err := cliCalls.LoginCall(); err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Printf("Login suceeded %v", isLogIn)
     }
-    //fmt.Printf("result: %v", res)
+
+    isAuth, err := cliCalls.IsUserAuthDCall()
+    if err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Println(isAuth)
+    }
+
+    isVault, err := cliCalls.DoesGoCryVaultExistCall()
+    if err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Println(isVault)
+    }
+    */
+
+    isOPInst, err := cliCalls.IsOpCliInstalledCall()
+    if err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Println(isOPInst)
+    }
+
+    //log.Fatal(err)
 
 }

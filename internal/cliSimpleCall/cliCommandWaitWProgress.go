@@ -32,6 +32,7 @@ func (p *ProgressMessage) Get() string {
 type oPCliCallWaitWProgress struct {
     cOPCall     oPCliCallerCommon
     chStep      <- chan time.Time
+    msg         string
 }
 
 func (liCall *oPCliCallWaitWProgress)getCommonCall() oPCliCallerCommon {
@@ -41,13 +42,10 @@ func (liCall *oPCliCallWaitWProgress)getCommonCall() oPCliCallerCommon {
 
 func (liCall *oPCliCallWaitWProgress)InvokeCommand() error{
     // pointer to call Result
-
-    pM := &ProgressMessage{current: "goCry: please authorize 1Pw Account"}
+    pM := &ProgressMessage{current: liCall.msg}
     go liCall.tickedProgressMsgRead(liCall.chStep, pM)
 
-    isDone, err := invokeCall(liCall)
-    pM.Set(fmt.Sprintf(`isDone: %v`, isDone))
-
+    err := invokeCall(liCall)
     return err
 }
 
@@ -82,14 +80,21 @@ func (liCall *oPCliCallWaitWProgress) tickedProgressMsgRead(c <-chan time.Time, 
     for {
         select {
         case <- c:
-            fmt.Printf("%v, -%v \n", pM.current, startT)
-            startT--
+            fmt.Printf("%v, exit t-%vs \n", pM.current, startT)
+            startT --
         }
     }
 }
 
 
-func NewOpCliCallWaitProgress(flagsVals []string, numLn int) (error, oPCliCallWaitWProgress){
+type OpWaitArgs struct{
+    TDMs        int
+    TickTS      int
+    Msg         string
+}
+
+func NewOpCliCallWaitProgress(flagsVals []string, wA OpWaitArgs) (error, oPCliCallWaitWProgress){
+    // check that tickTS < tDMS
     wPCall := oPCliCallWaitWProgress {
                 cOPCall: &commonOPCliCall {
                 numLn: 1,
@@ -98,10 +103,11 @@ func NewOpCliCallWaitProgress(flagsVals []string, numLn int) (error, oPCliCallWa
                         command: "op",
                         flagsVals: flagsVals,
                     },
-                    tDMs: 60000,
+                    tDMs: time.Duration(wA.TDMs),
                 },
             },
-            chStep: time.Tick(1 * time.Second),
+            chStep: time.Tick(1 * (time.Second * time.Duration(wA.TickTS))),
+            msg: wA.Msg,
     }
     return nil, wPCall
 }

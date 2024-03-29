@@ -3,6 +3,7 @@ package cliSimpleCall
 import (
 	"fmt"
 	"os/exec"
+	"time"
 )
 
 // Struct - to hold read-lines
@@ -18,7 +19,7 @@ func (rlCall *oPCliCallRl)getCommonCall() oPCliCallerCommon {
 
 func (rlCall *oPCliCallRl)InvokeCommand() error{
     // pointer to call Result
-    _, err := invokeCall(rlCall)
+    err := invokeCall(rlCall)
     return err
 }
 
@@ -39,9 +40,10 @@ func (rlCall *oPCliCallRl)handleLinesRes(l string, ok bool, c *exec.Cmd) (bool, 
         rlCall.rL = append(rlCall.rL, fmt.Sprintf("%v\n", l))
         return isDone, nil
     }
+
     // we reached the end of the command
     if err := c.Wait(); err != nil{
-        return false, fmt.Errorf("handleLines: cmd.wait failed : %w", err)
+        return false, fmt.Errorf("handleLines: cmd.wait failed : %v", err)
     }
     return isDone, nil
 }
@@ -50,7 +52,7 @@ func (rlCall *oPCliCallRl)GetReadLines() []string{
     return rlCall.rL
 }
 
-func NewOpCliCallRl(flagsVals []string, numLn int) (error, oPCliCallRl){
+func NewOpCliCallRl(flagsVals []string, tDMs int, numLn int) (error, oPCliCallRl){
     rlCall := oPCliCallRl {
                 cOPCall: &commonOPCliCall {
                 numLn: numLn,
@@ -59,13 +61,10 @@ func NewOpCliCallRl(flagsVals []string, numLn int) (error, oPCliCallRl){
                         command: "op",
                         flagsVals: flagsVals,
                     },
-                    tDMs: 100,
+                    tDMs: time.Duration(tDMs),
                 },
             },
             rL: []string{},
         }
     return nil, rlCall
 }
-
-
-
