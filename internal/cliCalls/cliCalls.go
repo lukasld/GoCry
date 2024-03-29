@@ -113,30 +113,6 @@ func IsOpCliInstalledCall() (bool, error){
 func SetupVaultAndKeystoreCall(){
 }
 
-// Keystore
-/*
-{
-    "items" : {
-        <uuid>: {
-            "ts": "YYYY-MM-DD HH:MM:SS",
-            "id": <1pwId>
-        },
-        ...
-    }
-}
-*/
-
-func getKeyStoreCall(){
-    // unmarshal json
-
-
-}
-
-func updateKeyStoreCall(){
-}
-
-
-
 
 
 func DoesItemExistCall() (bool, error){
@@ -180,7 +156,9 @@ func UpdateKeyStoreCall(){
     /* add / delete uuidv4: id */
 }
 
+/*
 func GetKeyStoreItemCall(){
-    /* Memguard */
-    /* get uuid */
+    // Memguard
+    // get uuid
 }
+*/

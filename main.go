@@ -37,7 +37,6 @@ func main(){
     }else{
         fmt.Println(isVault)
     }
-    */
 
     isOPInst, err := cliCalls.IsOpCliInstalledCall()
     if err != nil{
@@ -45,7 +44,18 @@ func main(){
     }else{
         fmt.Println(isOPInst)
     }
+    */
+
+    kSD, err := cliCalls.GetKeyStoreCall()
+    if err != nil{
+        fmt.Println(err)
+    }else{
+        fmt.Println(*kSD)
+    }
+
 
     //log.Fatal(err)
+
+
 
 }
