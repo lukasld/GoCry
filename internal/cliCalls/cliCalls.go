@@ -57,7 +57,7 @@ func IsUserAuthDCall() (bool, error){
     /* TODO String - Command String Store or so */
     args := oPReadArgs{
         flagsVals:  []string{"whoami"},
-        tDMs:       100,
+        tDMs:       400,
         numLn:      5,
     }
     lns, err := oPReadLines(args)

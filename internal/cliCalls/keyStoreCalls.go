@@ -1,36 +1,23 @@
 package cliCalls
 
-// Keystore
-/*
-{
-    "items" : {
-        <uuid>: {
-            "ts": "YYYY-MM-DD HH:MM:SS",
-            "id": <1pwId>
-        },
-        ...
-    }
-}
-*/
-
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+
+    //"unsafe"
+    //"github.com/awnumar/memguard"
 )
 
 type Item struct {
     Ts string   `json:"ts"`
     Id string   `json:"id"`
 }
-//type StoreItemMap map[string]StoreItem
-//items   string  `json:"items"`
 
 type KSData struct {
     Items map[string]Item `json:"items"`
 }
-
 
 func unmarshalKS(pJs *string) (*KSData, error){
     var kSD KSData
@@ -55,6 +42,7 @@ func cleanKsString(onePwStr *string) (error){
 }
 
 func GetKeyStoreCall() (*KSData, error){
+    /* retrieves the Keystore-data and parses it */
     if _, err := IsUserAuthDCall(); err != nil {
         return nil, err
     }
@@ -63,7 +51,7 @@ func GetKeyStoreCall() (*KSData, error){
             "--vault", "GoCry-Vault",
             "--fields", "label=keystore",
         },
-        tDMs:       800,
+        tDMs:       2000,
         numLn:      10,
     }
     //TODO: memguarded
@@ -83,6 +71,7 @@ func GetKeyStoreCall() (*KSData, error){
     return kSD, nil
 }
 
-
 func updateKeyStoreCall(){
+
 }
+
