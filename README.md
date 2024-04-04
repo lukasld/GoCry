@@ -18,6 +18,7 @@ External Libraries used:
 
 TODO:
 - Unit-tests.
+- Memguard critical sections.
 - Encryption package.
 - CLI interface-package.
 - Documentation.
