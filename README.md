@@ -1,6 +1,6 @@
 ### GOCRY - W.I.P.
 
-![GoCry CLI - Schema](https://ibb.co/GTQxQyb)
+![GoCry CLI - Schema](https://i.ibb.co/rdF9cxG/Gocry-V2-draw.jpg)
 
 This is a work-in-progress repo for a Go-1Password-CLI
 wrapper. 
